@@ -47,11 +47,11 @@ This template comes with the following features:
 
 In this project, files and folders with a double underscore (`__`) in their filename or folder name are treated as special. Specifically:
 
-- A file named `__guarded.tsx` in the `__guarded` folder is used as the layout for all routes within that folder. This is a key feature of the routing convention used in this template. This approach helps in grouping routes that share common layouts or behavior.
+- A file named `__guarded.tsx` next to the `__guarded` folder is used as the layout for all routes within that folder. This is a key feature of the routing convention used in this template. This approach helps in grouping routes that share common layouts or behavior.
 
 Example:
 
-- `__guarded/__guarded.tsx` will act as a layout for every page inside the `__guarded` folder.
+- `__guarded.tsx` will act as a layout for every page inside the `__guarded` folder.
 
 ## 🗂️ Folder Structure Example
 

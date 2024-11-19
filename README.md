@@ -1,4 +1,4 @@
-# Remix Template with TailwindCSS, Shadcn, Zodios, i18next, and More
+# Remix Template
 
 This repository provides a ready-to-use template for creating a Remix application with modern tooling, including TailwindCSS, Shadcn, environment variable validation with T3-oss, Zodios API client, i18next for localization, and more.
 
@@ -7,7 +7,7 @@ This repository provides a ready-to-use template for creating a Remix applicatio
 To create a new Remix project from this template, run the following command:
 
 ```bash
-npx create-remix@latest --template <your-github-username>/<repo-name>
+npx create-remix@latest --template git@github.com:zerodays/remix-template.git
 ```
 
 This will set up a new Remix app with all the configurations and dependencies outlined below.

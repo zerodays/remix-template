@@ -1,0 +1,45 @@
+name: Lint
+on:
+  push:
+  pull_request:
+
+defaults:
+  run:
+    working-directory: ./frontend
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0 # Specify the desired PNPM version
+          run_install: true
+      - name: Lint
+        run: |
+          pnpm lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0 # Specify the desired PNPM version
+          run_install: true
+      - name: Typecheck
+        run: |
+          pnpm tsc
+
+  prettier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0 # Specify the desired PNPM version
+          run_install: true
+      - name: Run prettier
+        run: |
+          pnpm format:check

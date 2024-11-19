@@ -10,7 +10,8 @@
     "start": "remix-serve ./build/server/index.js",
     "typecheck": "tsc",
     "format:check": "prettier --check --ignore-path .prettierignore .",
-    "format:fix": "prettier --write --ignore-path .prettierignore ."
+    "format:fix": "prettier --write --ignore-path .prettierignore .",
+    "i18n": "tsx ./app/i18n/validate-translations.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.0",
@@ -38,7 +39,6 @@
     "remix-i18next": "^6.4.1",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
-    "vite-env-only": "^3.0.3",
     "zod": "^3.23.8",
     "zustand": "^5.0.1"
   },

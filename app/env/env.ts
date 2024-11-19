@@ -6,7 +6,7 @@ export const env = createEnv({
     NODE_ENV: z.enum(['development', 'production', 'staging']),
   },
   client: {
-    PUBLIC_TEST: z.string(),
+    PUBLIC_TEST: z.string().optional(),
   },
   clientPrefix: 'PUBLIC_',
   runtimeEnv: process.env,

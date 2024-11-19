@@ -1,7 +1,6 @@
 import { vitePlugin as remix } from '@remix-run/dev';
 import { createRoutesFromFolders } from '@remix-run/v1-route-convention';
 import { defineConfig } from 'vite';
-import { envOnlyMacros } from 'vite-env-only';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 declare module '@remix-run/node' {
@@ -12,7 +11,7 @@ declare module '@remix-run/node' {
 
 export default defineConfig({
   plugins: [
-    envOnlyMacros(),
+    // envOnlyMacros(),
     remix({
       future: {
         v3_fetcherPersist: true,

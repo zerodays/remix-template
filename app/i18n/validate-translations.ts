@@ -4,16 +4,31 @@
 import { readdirSync } from 'fs';
 import path from 'path';
 
+import { pathToFileURL } from 'url';
 import { defaultLocale, LOCALES } from './i18n';
 
 const localesFolder = './app/i18n/locales';
-// 'require' imports work relative to the file, not the cwd
-const localesFolderRelative = './locales';
 
 const getLocalePath = (locale: string) => path.join(localesFolder, locale);
 
-const getLocaleFile = (locale: string, file: string) =>
-  path.join(path.join(localesFolderRelative, locale), file);
+/**
+ * Recursively get all `.ts` files in a directory.
+ */
+const getFilesRecursively = (directory: string): string[] => {
+  const entries = readdirSync(directory, { withFileTypes: true });
+
+  const files = entries
+    .filter((file) => !file.isDirectory() && file.name.endsWith('.ts'))
+    .map((file) => path.join(directory, file.name));
+
+  const folders = entries.filter((folder) => folder.isDirectory());
+
+  for (const folder of folders) {
+    files.push(...getFilesRecursively(path.join(directory, folder.name)));
+  }
+
+  return files;
+};
 
 /**
  * Deep diff between keys of two objects.
@@ -132,126 +147,110 @@ function pairsWithoutPlural(obj: any) {
   );
 }
 
-const validateDefaultLocale = () => {
-  if (!LOCALES.includes(defaultLocale)) {
-    console.error(`Default locale '${defaultLocale}' is invalid.`);
-    process.exit(1);
-  }
-};
+const validateFiles = async (
+  localePath: string,
+  defaultLocalePath: string,
+  defaultLocaleFiles: string[],
+) => {
+  for (const defaultLocaleFile of defaultLocaleFiles) {
+    const relativePath = path.relative(defaultLocalePath, defaultLocaleFile);
+    const localeFile = path.join(localePath, relativePath);
 
-const validateFiles = async (locale: string, defaultLocaleFiles: any[]) => {
-  for (const file of defaultLocaleFiles) {
-    // Open js text files
-    const defaultLocaleFile = getLocaleFile(defaultLocale, file);
-    const localeFile = getLocaleFile(locale, file);
-
-    const defaultLocaleData = await import(defaultLocaleFile);
-    const localeData = await import(localeFile);
-
-    // Check if all keys in default locale are present in locale
-    const { missingKeys, extraKeys, invalidTypes } = deepKeysDiff(
-      defaultLocaleData,
-      localeData,
-    );
-
-    if (missingKeys.length > 0) {
-      console.error(
-        `Missing keys in ${getLocaleFile(locale, file)}:`,
-        missingKeys,
+    try {
+      const defaultLocaleData = await import(
+        pathToFileURL(defaultLocaleFile).href
       );
-    }
+      const localeData = await import(pathToFileURL(localeFile).href);
 
-    if (extraKeys.length > 0) {
-      console.error(`Extra keys in ${getLocaleFile(locale, file)}:`, extraKeys);
-    }
-
-    if (invalidTypes.length > 0) {
-      console.error(
-        `Invalid types in ${getLocaleFile(locale, file)}:`,
-        invalidTypes,
+      const { missingKeys, extraKeys, invalidTypes } = deepKeysDiff(
+        defaultLocaleData,
+        localeData,
       );
-    }
 
-    if (
-      missingKeys.length > 0 ||
-      extraKeys.length > 0 ||
-      invalidTypes.length > 0
-    ) {
+      if (missingKeys.length > 0) {
+        console.error(`Missing keys in ${localeFile}:`, missingKeys);
+      }
+
+      if (extraKeys.length > 0) {
+        console.error(`Extra keys in ${localeFile}:`, extraKeys);
+      }
+
+      if (invalidTypes.length > 0) {
+        console.error(`Invalid types in ${localeFile}:`, invalidTypes);
+      }
+
+      if (
+        missingKeys.length > 0 ||
+        extraKeys.length > 0 ||
+        invalidTypes.length > 0
+      ) {
+        process.exit(1);
+      }
+    } catch (error) {
+      console.error(`Error importing file ${localeFile}:`, error);
       process.exit(1);
     }
   }
 };
 
-const isNotTsFile = (file: string) =>
-  !(file.endsWith('.ts') || file.endsWith('.tsx'));
+const validate = async () => {
+  // Ensure all locales are present
+  const locales = readdirSync(localesFolder, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
 
-const validate = () => {
-  // 1.
-  // Check if all locales in config are present in i18n folder and vice versa
-  const locales = readdirSync(localesFolder).filter(isNotTsFile);
-
-  const missingLocales = LOCALES.filter(
-    (locale: string) => !locales.includes(locale),
-  );
+  const missingLocales = LOCALES.filter((locale) => !locales.includes(locale));
 
   if (missingLocales.length > 0) {
-    console.error(`Missing locales in ${localesFolder}:`, missingLocales);
+    console.error(`Missing locales: ${missingLocales}`);
     process.exit(1);
   }
 
-  const extraLocales = locales.filter(
-    (locale: string) => !LOCALES.includes(locale as any),
-  );
-
+  const extraLocales = locales.filter((locale) => !LOCALES.includes(locale));
   if (extraLocales.length > 0) {
-    console.error('Extra locales in /locales:', extraLocales);
+    console.error(`Extra locales: ${extraLocales}`);
     process.exit(1);
   }
 
-  // 2.
-  // Check if default locale is valid
-  validateDefaultLocale();
-
-  const defaultLocaleFiles = readdirSync(getLocalePath(defaultLocale));
+  // Validate default locale
+  const defaultLocalePath = getLocalePath(defaultLocale);
+  const defaultLocaleFiles = getFilesRecursively(defaultLocalePath);
 
   for (const locale of locales) {
-    // Skip default locale
-    if (locale === defaultLocale) {
-      continue;
-    }
+    if (locale === defaultLocale) continue;
 
-    // 3.
-    // Check if namespaces match
-    const localeFiles = readdirSync(getLocalePath(locale));
+    const localePath = getLocalePath(locale);
 
-    const missingNamespaces = defaultLocaleFiles.filter(
-      (file: string) => !localeFiles.includes(file),
+    const localeFiles = getFilesRecursively(localePath);
+    const defaultRelativePaths = defaultLocaleFiles.map((file) =>
+      path.relative(defaultLocalePath, file),
+    );
+    const localeRelativePaths = localeFiles.map((file) =>
+      path.relative(localePath, file),
+    );
+
+    const missingNamespaces = defaultRelativePaths.filter(
+      (defaultFile) => !localeRelativePaths.includes(defaultFile),
     );
 
     if (missingNamespaces.length > 0) {
-      console.error(
-        `Missing namespaces in ${getLocalePath(locale)}:`,
-        missingNamespaces,
-      );
+      console.error(`Missing namespaces in ${localePath}:`, missingNamespaces);
       process.exit(1);
     }
 
-    const extraNamespaces = localeFiles.filter(
-      (file: string) => !defaultLocaleFiles.includes(file),
+    const extraNamespaces = localeRelativePaths.filter(
+      (localeFile) => !defaultRelativePaths.includes(localeFile),
     );
 
     if (extraNamespaces.length > 0) {
-      console.error(
-        `Extra namespaces in ${getLocalePath(locale)}:`,
-        extraNamespaces,
-      );
+      console.error(`Extra namespaces in ${localePath}:`, extraNamespaces);
       process.exit(1);
     }
 
-    // 4.
-    // Check if keys match
-    validateFiles(locale, defaultLocaleFiles);
+    // Validate keys
+    await validateFiles(localePath, defaultLocalePath, defaultLocaleFiles);
   }
+
   console.log('All good! 🎉');
 };
 

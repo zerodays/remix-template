@@ -3,6 +3,7 @@
   "private": true,
   "sideEffects": false,
   "type": "module",
+  "packageManager": "pnpm@9.1.0",
   "scripts": {
     "build": "remix vite:build",
     "dev": "infisical run --path=/frontend -- sh -c \"tsx ./app/env/validateEnv.ts && remix vite:dev\"",
